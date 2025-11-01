@@ -2,12 +2,12 @@
 
 ## What idea(s) do you have for your final project?
 
-TODO
+- To make a sport car that can race with bot 
 
 ## If you plan to collaborate with one or two classmates, what are their names?
 
-TODO
+- NOt at the moment 
 
 ## Do you have any questions of your own?
 
-TODO
+- No 
