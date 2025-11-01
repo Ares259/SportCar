@@ -2,7 +2,9 @@
 
 ## What idea(s) do you have for your final project?
 
-- To make a sport car that can race with bot, make the desgin of the map a race track, create bot. 
+- To make a sport car that can race with bot
+- make the desgin of the map a race track
+- create bot. 
 
 ## If you plan to collaborate with one or two classmates, what are their names?
 
