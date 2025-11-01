@@ -6,7 +6,7 @@
 
 ## If you plan to collaborate with one or two classmates, what are their names?
 
-- NOt at the moment 
+- Not at the moment 
 
 ## Do you have any questions of your own?
 
