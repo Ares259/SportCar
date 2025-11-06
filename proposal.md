@@ -10,7 +10,7 @@ This project is base a car race, include car crash and a race map.
 
 ## In a paragraph or more, detail your project. What will your software do? What features will it have? How will it be executed?
 
-It will be in unreal engine 5, it will feturces race, desturtion when your car crash into something. It will feature great graphia.  
+It will be in unreal engine 5, it will feturces race, destruction when your car crash into something. It will feature great graphics.  
 
 ## If planning to combine 1051's final project with another course's final project, with which other course? And which aspect(s) of your proposed project would relate to 1051, and which aspect(s) would relate to the other course?
 
