@@ -1,6 +1,7 @@
 - See the master branch for code in use in Roblox studio
 - [https://github.com/Ares259/Roblox_RacingGame](https://github.com/Ares259/Roblox_RacingGame)
-- roblox tutorials use
-- https://www.youtube.com/watch?v=PB00e5wi5Uk&list=PLuEQ5BB-Z1PL5PAsTh1rL_wRw7NN6Cz64&index=9
+- roblox tutorials use, Guide for create a car and map 
+- [https://www.youtube.com/watch?v=PB00e5wi5Uk&list=PLuEQ5BB-Z1PL5PAsTh1rL_wRw7NN6Cz64&index=9](https://www.youtube.com/watch?v=SkMLcBPXHUA&list=PLuEQ5BB-Z1PL5PAsTh1rL_wRw7NN6Cz64&index=1)
+- Guide for connect Github to Roblox Studio and Guide that helpful for Roblox Studio
 - https://www.youtube.com/watch?v=F3ASTJuO82A
 - [https://www.youtube.com/watch?v=IJDg6tRJmHo]
