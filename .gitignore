@@ -6,3 +6,7 @@
 /*.rbxl.lock
 
 sourcemap.json
+Packages/
+SeverPackages/
+sourcemap.json
+wally.lock
