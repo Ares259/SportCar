@@ -25,4 +25,4 @@ Create a race track in Roblox studio, have a driving car, have a ui that allow p
 A Check point for race track, check for player that complete a lap around the race track it still underdevelopment 
 
 #### What problems, if any, have you encountered?
-
+Coding won't work trying to fix it. 
