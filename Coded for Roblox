@@ -1,0 +1,233 @@
+local function disconnectAndClear(tbl: { RBXScriptConnection })
+	for _, connection in tbl do
+		connection:Disconnect()
+	end
+	table.clear(tbl)
+end
+
+return disconnectAndClear
+
+local function formatTime(t: number): string
+	local remaining = t
+	local minutes = math.floor(t / 60)
+	remaining -= minutes * 60
+	local seconds = math.floor(remaining)
+	remaining -= seconds
+	return string.format("%.2d:%.2d.%.2d", minutes, seconds, math.floor(remaining * 100))
+end
+
+return formatTime
+
+
+local function getCheckpoints(raceContainer: Model): { BasePart }
+	local checkpointsFolder = raceContainer:FindFirstChild("Checkpoints")
+	assert(checkpointsFolder, `No Checkpoints in {raceContainer:GetFullName()}`)
+
+	
+	local checkpoints = {}
+	local numCheckpoints = #checkpointsFolder:GetChildren()
+	for i = 1, numCheckpoints do
+		local checkpoint = checkpointsFolder:FindFirstChild(`Checkpoint{i}`)
+		assert(checkpoint, `{raceContainer:GetFullName()} missing checkpoint: Checkpoint{i}`)
+		table.insert(checkpoints, checkpoint)
+	end
+
+	return checkpoints
+end
+
+return getCheckpoints
+
+
+local function getLeaderboard(raceContainer: Model): Folder
+	local leaderboardFolder = raceContainer:FindFirstChild("Leaderboard")
+	if not leaderboardFolder then
+		leaderboardFolder = Instance.new("Folder")
+		leaderboardFolder.Name = "Leaderboard"
+		leaderboardFolder.Parent = raceContainer
+	end
+	return leaderboardFolder
+end
+
+return getLeaderboard
+
+local function getStartingArea(raceContainer: Model): BasePart
+	local startingArea = raceContainer:FindFirstChild("StartingArea")
+	assert(startingArea, `No StartingArea in {raceContainer:GetFullName()}`)
+
+	return startingArea
+end
+
+return getStartingArea
+
+local Constants = {
+	PLAYER_IN_RACE_TAG = "InRace",
+	PLAYER_LAP_ATTRIBUTE = "lap",
+	PLAYER_CHECKPOINT_ATTRIBUTE = "checkpoint",
+	PLAYER_LAST_PASSED_CHECKPOINT_ATTRIBUTE = "lastPassedCheckpoint",
+	PLAYER_LAST_LAP_STARTED_ATTRIBUTE = "lastLapStarted",
+	PLAYER_BEST_LAP_TIME_ATTRIBUTE = "bestLapTime",
+	PLAYER_TOTAL_TIME_ATTRIBUTE = "totalTime",
+	PLAYER_PLACE_ATTRIBUTE = "place",
+
+	NUMBER_OF_LAPS_ATTRIBUTE = "numberOfLaps",
+	MAX_TIME_BETWEEN_CHECKPOINTS_ATTRIBUTE = "maxTimeBetweenCheckpoints",
+	START_LINEUP_MAX_PLAYERS_ATTRIBUTE = "startLineupMaxPlayers",
+	START_LINEUP_PADDING_ATTRIBUTE = "startLineupPadding",
+	START_COUTNDOWN_ATTRIBUTE = "startCountdown",
+	MAX_PLAYERS_ATTRIBUTE = "maxPlayers",
+	MIN_PLAYERS_ATTRIBUTE = "minPlayers",
+	START_DELAY_ATTRIBUTE = "startDelay",
+	MANAGER_STATE_ATTRIBUTE = "managerState",
+	START_DELAY_COUNTDOWN_ATTRIBUTE = "_startDelayCountdown",
+}
+
+return Constants
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+local Constants = require(ReplicatedStorage.Constants)
+local CheckpointFlags = require(script.Parent.CheckpointFlags)
+local CheckpointGui = require(script.Parent.GuiModules.CheckpointGui)
+local RaceInfoGui = require(script.Parent.GuiModules.RaceInfoGui)
+local LeaderboardGui = require(script.Parent.GuiModules.LeaderboardGui)
+local playFromStart = require(script.playFromStart)
+local player = Players.LocalPlayer
+local playerGui = player.PlayerGui
+local raceGui = playerGui:WaitForChild("RaceGui")
+local uiScale = raceGui:WaitForChild("UIScale")
+local countdownLabel = raceGui:WaitForChild("CountdownLabel")
+local finishFrame = raceGui:WaitForChild("FinishFrame")
+local StartLightSequence = ReplicatedStorage:FindFirstChild("StartLightSequence")
+local remotes = ReplicatedStorage.Remotes
+local joinRaceRemote = remotes.JoinRace
+local leaveRaceRemote = remotes.LeaveRace
+local finishedRaceRemote = remotes.FinishedRace
+local showCountdownRemote = remotes.ShowCountdown
+local audioPlayers = SoundService.Audio.Players
+local tickPlayer = audioPlayers.UI.TickPlayer
+local startPlayer = audioPlayers.UI.StartPlayer
+local finishPlayer = audioPlayers.UI.FinishPlayer
+local checkpointPlayer = audioPlayers.UI.CheckpointPlayer
+local SMALL_SCREEN_THRESHOLD = 500
+local SMALL_SCREEN_SCALE = 0.8
+local checkpointPassedConnection = nil
+local function showCountdown(countdown: number)
+	task.spawn(function()
+		
+		if StartLightSequence then
+			StartLightSequence:FireServer()
+		end
+		countdownLabel.Visible = true
+		
+		for i = countdown, 1, -1 do
+			playFromStart(tickPlayer)
+			countdownLabel.Text = tostring(i)
+			task.wait(1)
+		end
+		
+		RaceInfoGui.raceStarted()
+		
+		playFromStart(startPlayer)
+		countdownLabel.Text = "GO!!!"
+		task.wait(1.5)
+		countdownLabel.Visible = false
+	end)
+end
+local function finishedRace(raceContainer: Model)
+	
+	task.spawn(function()
+		playFromStart(finishPlayer)
+		finishFrame.Visible = true
+		task.wait(3)
+		finishFrame.Visible = false
+		LeaderboardGui.enable(raceContainer)
+	end)
+end
+local function joinRace(raceContainer: Model)
+	
+	CheckpointFlags.enable(raceContainer)
+	RaceInfoGui.enable(raceContainer)
+	CheckpointGui.enable(raceContainer)
+	
+	checkpointPassedConnection = player
+		:GetAttributeChangedSignal(Constants.PLAYER_CHECKPOINT_ATTRIBUTE)
+		:Connect(function()
+			playFromStart(checkpointPlayer)
+		end)
+end
+local function leaveRace()
+	
+	CheckpointFlags.disable()
+	RaceInfoGui.disable()
+	CheckpointGui.disable()
+	if checkpointPassedConnection then
+		checkpointPassedConnection:Disconnect()
+		checkpointPassedConnection = nil
+	end
+end
+local function updateScale()
+	
+	local minScreenSize = math.min(raceGui.AbsoluteSize.X, raceGui.AbsoluteSize.Y)
+	local isSmallScreen = minScreenSize < SMALL_SCREEN_THRESHOLD
+	uiScale.Scale = if isSmallScreen then SMALL_SCREEN_SCALE else 1
+end
+local function initialize()
+	joinRaceRemote.OnClientEvent:Connect(joinRace)
+	leaveRaceRemote.OnClientEvent:Connect(leaveRace)
+	finishedRaceRemote.OnClientEvent:Connect(finishedRace)
+	showCountdownRemote.OnClientEvent:Connect(showCountdown)
+	raceGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScale)
+	updateScale()
+end
+initialize()
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local getCheckpoints = require(ReplicatedStorage.Utility.getCheckpoints)
+local createFlag = require(script.createFlag)
+
+local checkpointFlagTemplate = script.CheckpointFlag
+local finishFlagTemplate = script.FinishFlag
+
+local function createFlagPair(checkpoint: BasePart, template: Model): Model
+	local flags = Instance.new("Model")
+
+	
+	local rightFlag = createFlag(checkpoint, template, 0.5)
+	rightFlag.Parent = flags
+
+	
+	local leftFlag = createFlag(checkpoint, template, -0.5)
+	leftFlag.Parent = flags
+
+	return flags
+end
+
+
+local function createCheckpointFlags(raceContainer: Model): ({ Model }, Model)
+	local checkpoints = getCheckpoints(raceContainer)
+	local orderedCheckpointFlags = {}
+
+	
+	for _, checkpoint in checkpoints do
+		local flags = createFlagPair(checkpoint, checkpointFlagTemplate)
+		flags.Name = "CheckpointFlags"
+		flags.Parent = checkpoint
+
+		table.insert(orderedCheckpointFlags, flags)
+	end
+
+	
+	local lastCheckpoint = checkpoints[#checkpoints]
+	local finishFlags = createFlagPair(lastCheckpoint, finishFlagTemplate)
+	finishFlags.Name = "FinishFlags"
+	finishFlags.Parent = lastCheckpoint
+
+	return orderedCheckpointFlags, finishFlags
+end
+
+return createCheckpointFlags
+
+
+
